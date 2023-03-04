@@ -3,21 +3,13 @@
     windows_subsystem = "windows"
 )]
 
-use tauri::{Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, CustomMenuItem, SystemTrayMenuItem};
+use tauri::{Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, CustomMenuItem};
 use tauri_plugin_positioner::{Position, WindowExt};
-
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 fn main() {
     let quit = CustomMenuItem::new("quit".to_string(), "Quit").accelerator("Cmd+Q");
-    let hide = CustomMenuItem::new("hide".to_string(), "Hide");
     let system_tray_menu = SystemTrayMenu::new()
-        .add_item(quit)
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(hide);
+        .add_item(quit);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_positioner::init())
@@ -38,10 +30,31 @@ fn main() {
                         window.show().unwrap();
                         window.set_focus().unwrap();
                     }
-                },
+                }
+
+                SystemTrayEvent::RightClick {
+                    position: _,
+                    size: _,
+                    ..
+                } => {
+                    println!("right click");
+                }
+
+                SystemTrayEvent::DoubleClick {
+                    position: _,
+                    size: _,
+                    ..
+                } => {
+                    println!("double click");
+                }
+
                 SystemTrayEvent::MenuItemClick { tray_id, .. } => match tray_id.as_str() {
                     "quit" => {
                         std::process::exit(0);
+                    }
+                    "hide" => {
+                        let window = app.get_window("main").unwrap();
+                        window.hide().unwrap();
                     }
                     _ => {}
                 },
@@ -56,23 +69,6 @@ fn main() {
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-
-// fn main() {
-//     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-//     let hide = CustomMenuItem::new("hide".to_string(), "Hide");
-//     let tray_menu = SystemTrayMenu::new()
-//         .add_item(quit)
-//         .add_native_item(SystemTrayMenuItem::Separator)
-//         .add_item(hide);
-//     let tray = SystemTray::new().with_menu(tray_menu);
-
-//     tauri::Builder::default()
-//         .system_tray(tray)
-//         .invoke_handler(tauri::generate_handler![greet])
-//         .run(tauri::generate_context!())
-//         .expect("error while running tauri application");
-// }
